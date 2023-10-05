@@ -84,7 +84,7 @@ execute_filter <- function(df, filter_df, state, county) {
   return(df)
 }
 
-area_boxplot <- function(df, state, county, variable) {
+area_boxplot <- function(df, state, county, variable, include.outliers = FALSE) {
   
   area_selected_df <- df %>%
     filter(state_territory == state & county_name == county) %>%
@@ -100,15 +100,38 @@ area_boxplot <- function(df, state, county, variable) {
   area_order <- c(county, state, "National")
   area_df$area_summary <- factor(area_df$area_summary, levels = area_order)
   
-  # create_histogram(area_df, variable, group_in = "county_summary")
-  area_df %>%
-    ggplot() +
-    # geom_boxplot(aes_string("county_summary", "variable")) +
-    geom_boxplot(aes_string("area_summary", variable, fill = "area_summary")) +
+  if (!include.outliers) {
+    
+    y_boundaries <- area_df %>%
+      group_by(area_summary) %>%
+      summarize(q1 = quantile(.data[[variable]], probs = c(0.25), na.rm = TRUE),
+                q3 = quantile(.data[[variable]], probs = c(0.75), na.rm = TRUE)) %>%
+      mutate(iqr = q3-q1) %>%
+      mutate(whisker_length = iqr * 1.5) %>%
+      mutate(lower_limit = max(c(0, q1-whisker_length)),
+             upper_limit = q3 + whisker_length) %>%
+      ungroup()
+    
+    y_max <- max(y_boundaries$upper_limit)
+    y_min <- min(y_boundaries$lower_limit)
+    
+    p <- area_df %>%
+      ggplot() +
+      geom_boxplot(aes_string("area_summary", variable, fill = "area_summary"), outlier.shape = NA) +
+      scale_y_continuous(limits = c(y_min, y_max))
+    
+  } else {
+    p <- area_df %>%
+      ggplot() +
+      geom_boxplot(aes_string("area_summary", variable, fill = "area_summary"))
+  }
+  
+  p +
     scale_fill_manual(values = c("#f7776c", "#689cfc", "#08bc3c")) +
+    labs(x = "", y = str_to_sentence(gsub("_", " ", variable))) +
     theme_bw() +
     theme(
-      legend.position = "bottom"
+      legend.position = "none"
     )
 }
 
@@ -220,7 +243,7 @@ server <- function(input, output, session) {
   })
   
   output$location_boxplot <- renderPlot({
-    area_boxplot(cejst, input$state_selected, input$county_selected, input$location_var_selected)
+    area_boxplot(cejst, input$state_selected, input$county_selected, input$location_var_selected, input$boxplot_outliers_toggle)
   }, height = 600)
   
   output$location_ranked <- renderPlot({

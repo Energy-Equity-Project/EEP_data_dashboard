@@ -29,6 +29,12 @@ body <- dashboardBody(
     h2("Location Results"),
     column(
       6,
+      materialSwitch(
+        inputId = "boxplot_outliers_toggle",
+        label = "Include Outliers", 
+        value = FALSE,
+        status = "primary"
+      ),
       plotOutput("location_boxplot", height = "100%")
     ),
     column(
