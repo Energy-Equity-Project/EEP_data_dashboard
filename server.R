@@ -167,9 +167,7 @@ area_ranked <- function(df, state, county, variable, range_type = FALSE, center_
       ungroup()
   }
   
-  print(str(area_df))
-  print(str(national_df))
-  
+
   if (!center_type) {
     area_df <- area_df %>%
       left_join(
@@ -258,6 +256,51 @@ area_summary <- function(df, state, county, variable, operation) {
   
 }
 
+create_scatter <- function(df, var1, var2, color_var, include.trendline = FALSE) {
+  p <- df %>%
+    filter(!is.na(.data[[var1]]) & !is.na(.data[[var2]])) %>%
+    ggplot(aes_string(x = var1, y = var2))
+  
+  if (str_length(color_var) == 0) {
+    p <- p +
+      geom_point()
+  } else {
+    p <- p +
+      geom_point(aes_string(color = color_var))
+  }
+  
+  if (include.trendline & str_length(color_var) == 0) {
+    p <- p +
+      geom_smooth(method=lm)
+  } else if (include.trendline & str_length(color_var) > 0) {
+    p <- p +
+      geom_smooth(aes_string(color = color_var), method=lm)
+  }
+  
+  p <- p +
+    scale_y_continuous(limits = c(0, max(df[[var2]]))) +
+    theme_bw() +
+    theme(
+      axis.text.x = element_text(size = 12),
+      axis.text.y = element_text(size = 12),
+      axis.title.x = element_text(size = 15),
+      axis.title.y = element_text(size = 15)
+    ) +
+    labs(x = str_to_sentence(gsub("_", " ", var1)), y = str_to_sentence(gsub("_", " ", var2)))
+  
+  if (str_length(color_var) > 0) {
+    p <- p +
+      theme(
+        legend.position = "top",
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 12)
+      ) +
+      labs(color = str_to_sentence(gsub("_", " ", color_var)))
+  }
+  
+  p
+}
+
 server <- function(input, output, session) {
   
   react_vals <- reactiveValues(
@@ -266,11 +309,11 @@ server <- function(input, output, session) {
       lower_limit = as.numeric(),
       upper_limit = as.numeric()
       ),
-    df_filtered = cejst
+    filtered_df = cejst
   )
   
-  isolate(react_vals$filter_criteria)
-  isolate(react_vals$df_filtered)
+  # isolate(react_vals$filter_criteria)
+  # isolate(react_vals$df_filtered)
   
   output$state_selecter <- renderUI({
     pickerInput(
@@ -344,6 +387,40 @@ server <- function(input, output, session) {
         `live-search` = TRUE)
     )
   })
+  
+  output$scatter_var1_selected <- renderUI({
+    pickerInput(
+      inputId = "scatter_var1_selected",
+      label = "Select a X-axis variable:",
+      choices = variable_list,
+      options = list(
+        `live-search` = TRUE)
+    )
+  })
+  
+  output$scatter_var2_selected <- renderUI({
+    pickerInput(
+      inputId = "scatter_var2_selected",
+      label = "Select a Y-axis variable:",
+      choices = variable_list,
+      options = list(
+        `live-search` = TRUE)
+    )
+  })
+  
+  output$scatter_color_selected <- renderUI({
+    pickerInput(
+      inputId = "scatter_color_selected",
+      label = "Select a color variable:",
+      choices = c("", group_list),
+      options = list(
+        `live-search` = TRUE)
+    )
+  })
+  
+  output$scatterplot_explore <- renderPlot({
+    create_scatter(react_vals$filtered_df, input$scatter_var1_selected, input$scatter_var2_selected, input$scatter_color_selected, input$scatter_trend_selected)
+  }, height = 500)
   
   output$group_selecter <- renderUI({
     pickerInput(

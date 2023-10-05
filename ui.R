@@ -127,10 +127,35 @@ body <- dashboardBody(
   ),
   fluidRow(
     box(
+      title = "Analysis",
       width = 12,
       uiOutput("variable_selecter"),
       uiOutput("group_selecter"),
-      plotOutput("national_hist")
+      plotOutput("national_hist"),
+      column(
+        3,
+        uiOutput("scatter_var1_selected")
+      ),
+      column(
+        3,
+        uiOutput("scatter_var2_selected")
+      ),
+      column(
+        3,
+        uiOutput("scatter_color_selected")
+      ),
+      column(
+        3,
+        br(),
+        materialSwitch(
+          inputId = "scatter_trend_selected",
+          label = "Include Trendline",
+          value = FALSE,
+          status = "primary",
+          inline = TRUE
+        )
+      ),
+      plotOutput("scatterplot_explore", height = "100%")
     )
   )
 )
