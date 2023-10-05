@@ -133,25 +133,83 @@ area_boxplot <- function(df, state, county, variable, include.outliers = FALSE) 
     )
 }
 
-area_ranked <- function(df, state, county, variable) {
+area_ranked <- function(df, state, county, variable, range_type = FALSE, center_type = FALSE) {
   
   area_df <- df %>%
-    filter(state_territory == state) %>%
-    group_by(county_name) %>%
-    summarize(q1 = quantile(.data[[variable]], probs = c(0.25), na.rm = TRUE),
-              q3 = quantile(.data[[variable]], probs = c(0.75), na.rm = TRUE),
-              avg_var = mean(.data[[variable]], na.rm = TRUE)) %>%
-    ungroup() %>%
+    filter(state_territory == state)
+  
+  if (!range_type) {
+    area_df <- area_df %>%
+      group_by(county_name) %>%
+      summarize(q1 = quantile(.data[[variable]], probs = c(0.25), na.rm = TRUE),
+                q3 = quantile(.data[[variable]], probs = c(0.75), na.rm = TRUE)) %>%
+      ungroup()
+    
+    national_df <- df %>%
+      summarize(q1 = quantile(.data[[variable]], probs = c(0.25), na.rm = TRUE),
+                q3 = quantile(.data[[variable]], probs = c(0.75), na.rm = TRUE)) %>%
+      ungroup()
+      
+  } else {
+    area_df <- area_df %>%
+      group_by(county_name) %>%
+      summarize(q1 = min(.data[[variable]], na.rm = TRUE),
+                q3 = max(.data[[variable]], na.rm = TRUE)) %>%
+      ungroup()
+    
+    national_df <- df %>%
+      summarize(q1 = min(.data[[variable]], na.rm = TRUE),
+                q3 = max(.data[[variable]], na.rm = TRUE)) %>%
+      ungroup()
+  }
+  
+  print(str(area_df))
+  print(str(national_df))
+  
+  if (!center_type) {
+    area_df <- area_df %>%
+      left_join(
+        df %>%
+          filter(state_territory == state) %>%
+          group_by(county_name) %>%
+          summarize(avg_var = mean(.data[[variable]], na.rm = TRUE)) %>%
+          ungroup(),
+        by = c("county_name")
+      )
+    
+    national_df <- national_df %>%
+      cbind(
+        df %>%
+          summarize(avg_var = mean(.data[[variable]], na.rm = TRUE)) %>%
+          ungroup()
+      )
+      
+  } else {
+    area_df <- area_df %>%
+      left_join(
+        df %>%
+          filter(state_territory == state) %>%
+          group_by(county_name) %>%
+          summarize(avg_var = quantile(.data[[variable]], probs = c(0.5), na.rm = TRUE)) %>%
+          ungroup(),
+        by = c("county_name")
+      )
+    
+    national_df <- national_df %>%
+      cbind(
+        df %>%
+          summarize(avg_var = quantile(.data[[variable]], probs = c(0.5), na.rm = TRUE)) %>%
+          ungroup()
+      )
+  }
+  
+  area_df <- area_df %>%
     mutate(area_selected = case_when(
       county_name == county ~ county,
       TRUE ~ paste("Other county in", state)
     )) %>%
     bind_rows(
-      df %>%
-        summarize(q1 = quantile(.data[[variable]], probs = c(0.25), na.rm = TRUE),
-                  q3 = quantile(.data[[variable]], probs = c(0.75), na.rm = TRUE),
-                  avg_var = mean(.data[[variable]], na.rm = TRUE)) %>%
-        ungroup() %>%
+      national_df %>%
         mutate(area_selected = "National",
                county_name = "National")
     )
@@ -250,7 +308,7 @@ server <- function(input, output, session) {
                          nrow()))
   
   output$location_ranked <- renderPlot({
-    area_ranked(cejst, input$state_selected, input$county_selected, input$location_var_selected)
+    area_ranked(cejst, input$state_selected, input$county_selected, input$location_var_selected, input$ranked_range, input$ranked_center)
   }, height = reactive(500 + 5 * cejst %>%
                          filter(state_territory == input$state_selected) %>%
                          select(county_name) %>%
@@ -356,6 +414,7 @@ server <- function(input, output, session) {
   observeEvent(input$add_filter_row, {
     
     react_vals$filter_criteria <- react_vals$filter_criteria %>%
+      filter(variable != input$filter_variable_name) %>%
       bind_rows(
         data.frame(
           variable = c(input$filter_variable_name),
