@@ -60,8 +60,6 @@ create_histogram <- function(df, variable, group_in = NA) {
 
 execute_filter <- function(df, filter_df, state, county) {
   
-  print(paste("here", state, county))
-  
   if (nrow(filter_df) == 0 & state == "" & county == "") { return(df) }
   
   if (state != "") { df <- df %>% filter(state_territory == state) }
@@ -108,8 +106,8 @@ area_boxplot <- function(df, state, county, variable, include.outliers = FALSE) 
                 q3 = quantile(.data[[variable]], probs = c(0.75), na.rm = TRUE)) %>%
       mutate(iqr = q3-q1) %>%
       mutate(whisker_length = iqr * 1.5) %>%
-      mutate(lower_limit = max(c(0, q1-whisker_length)),
-             upper_limit = q3 + whisker_length) %>%
+      mutate(lower_limit = max(c(0, q1-iqr)),
+             upper_limit = q3 + iqr) %>%
       ungroup()
     
     y_max <- max(y_boundaries$upper_limit)
@@ -170,7 +168,7 @@ area_ranked <- function(df, state, county, variable) {
     scale_color_manual(values = c("#f7776c", "#689cfc", "#08bc3c")) +
     geom_point(aes(x = avg_var, y = reorder(county_name, avg_var)), color = "orange", size = 3) +
     theme_bw() +
-    labs(x = variable, y = "", color = "Areas") +
+    labs(x = str_to_sentence(gsub("_", " ", variable)), y = "", color = "Areas") +
     theme(
       legend.position = "bottom"
     )
@@ -243,12 +241,21 @@ server <- function(input, output, session) {
   })
   
   output$location_boxplot <- renderPlot({
+    
     area_boxplot(cejst, input$state_selected, input$county_selected, input$location_var_selected, input$boxplot_outliers_toggle)
-  }, height = 600)
+  }, height = reactive(500 + 5 * cejst %>%
+                         filter(state_territory == input$state_selected) %>%
+                         select(county_name) %>%
+                         distinct() %>%
+                         nrow()))
   
   output$location_ranked <- renderPlot({
     area_ranked(cejst, input$state_selected, input$county_selected, input$location_var_selected)
-  }, height = 600)
+  }, height = reactive(500 + 5 * cejst %>%
+                         filter(state_territory == input$state_selected) %>%
+                         select(county_name) %>%
+                         distinct() %>%
+                         nrow()))
   
   output$variable_selecter <- renderUI({
     pickerInput(
@@ -298,6 +305,18 @@ server <- function(input, output, session) {
     )
   })
   
+  output$bounds_slider <- renderUI({
+    upper_limit <- max(cejst[[input$filter_variable_name]], na.rm = TRUE)
+    lower_limit <- min(c(0, cejst[[input$filter_variable_name]]), na.rm = TRUE)
+    sliderInput(
+      inputId = "bounds_selected",
+      label = "Select a lower and upper limit:",
+      min = lower_limit,
+      max = upper_limit,
+      value = c(lower_limit, upper_limit)
+    )
+  })
+  
   output$add_variable_filter_name <- renderUI({
     pickerInput(
       inputId = "filter_variable_name",
@@ -335,12 +354,13 @@ server <- function(input, output, session) {
   
   
   observeEvent(input$add_filter_row, {
+    
     react_vals$filter_criteria <- react_vals$filter_criteria %>%
       bind_rows(
         data.frame(
           variable = c(input$filter_variable_name),
-          lower_limit = c(as.numeric(input$filter_lower_limit)),
-          upper_limit = c(as.numeric(input$filter_upper_limit))
+          lower_limit = c(as.numeric(input$bounds_selected[1])),
+          upper_limit = c(as.numeric(input$bounds_selected[2]))
         )
       )
   })

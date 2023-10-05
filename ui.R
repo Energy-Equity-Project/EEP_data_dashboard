@@ -29,17 +29,46 @@ body <- dashboardBody(
     h2("Location Results"),
     column(
       6,
-      materialSwitch(
-        inputId = "boxplot_outliers_toggle",
-        label = "Include Outliers", 
-        value = FALSE,
-        status = "primary"
-      ),
       plotOutput("location_boxplot", height = "100%")
     ),
     column(
       6,
       plotOutput("location_ranked", height = "100%")
+    )
+  ),
+  fluidRow(
+    column(
+      3,
+      br(),
+      materialSwitch(
+        inputId = "boxplot_outliers_toggle",
+        label = "Include Outliers", 
+        value = FALSE,
+        status = "primary"
+      )
+    ),
+    column(
+      3
+    ),
+    column(
+      3,
+      br()# ,
+      # materialSwitch(
+      #   inputId = "boxplot_outliers_toggle2",
+      #   label = "Include Outliers", 
+      #   value = FALSE,
+      #   status = "primary"
+      # )
+    ),
+    column(
+      3,
+      br()# ,
+      # materialSwitch(
+      #   inputId = "boxplot_outliers_toggle3",
+      #   label = "Include Outliers", 
+      #   value = FALSE,
+      #   status = "primary"
+      # )
     )
   ),
   fluidRow(
@@ -51,20 +80,11 @@ body <- dashboardBody(
     ),
     column(
       3,
-      uiOutput("add_variable_filter_name")
+      uiOutput("add_variable_filter_name"),
     ),
     column(
       3,
-      textInput(
-        inputId = "filter_lower_limit",
-        label = "Enter a lower limit:",
-        placeholder = "Lower limit..."
-      ),
-      textInput(
-        inputId = "filter_upper_limit",
-        label = "Enter an upper limit:",
-        placeholder = "Upper limit..."
-      )
+      uiOutput("bounds_slider")
     ),
     column(
       3,
