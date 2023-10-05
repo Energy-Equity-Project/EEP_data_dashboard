@@ -3,18 +3,17 @@ library(tidyverse)
 library(shiny)
 library(shinyWidgets)
 library(shinydashboard)
-library(DT)
+library(reactable)
 
 header <- dashboardHeader(
   title = "EEP Data Dashboard"
 )
 
 body <- dashboardBody(
-  
-  box(
-    title = "Location Based Filtering",
-    width = 12,
-    fluidRow(
+  fluidRow(
+    box(
+      title = "Location Exploration",
+      width = 12,
       column(
         3,
         uiOutput("state_selecter")
@@ -29,22 +28,12 @@ body <- dashboardBody(
       )
     )
   ),
-  box(
-    title = "Location Results",
-    width = 12,
-    fluidRow(
+  fluidRow(
+    box(
+      width = 6,
+      plotOutput("location_boxplot", height = "100%"),
       column(
         6,
-        plotOutput("location_boxplot", height = "100%")
-      ),
-      column(
-        6,
-        plotOutput("location_ranked", height = "100%")
-      )
-    ),
-    fluidRow(
-      column(
-        3,
         br(),
         materialSwitch(
           inputId = "boxplot_outliers_toggle",
@@ -54,10 +43,14 @@ body <- dashboardBody(
         )
       ),
       column(
-        3
-      ),
+        6
+      )
+    ),
+    box(
+      width = 6,
+      plotOutput("location_ranked", height = "100%"),
       column(
-        3,
+        6,
         br(),
         tags$div(
           materialSwitch(
@@ -71,7 +64,7 @@ body <- dashboardBody(
         )
       ),
       column(
-        3,
+        6,
         br(),
         tags$div(
           materialSwitch(
@@ -86,19 +79,27 @@ body <- dashboardBody(
       )
     )
   ),
-  box(
-    title = "Variable Filtering Options",
-    width = 12,
-    fluidRow(
-      
+  fluidRow(
+    box(
+      title = "Variable Filtering Options",
+      width = 12,
       column(
         3,
         uiOutput("data_state_filter"),
         uiOutput("data_county_filter"),
+        uiOutput("delete_variable_filter_name"),
+        actionButton(inputId = "filter_data", "Execute filter")
       ),
       column(
         3,
         uiOutput("add_variable_filter_name"),
+        br(),
+        br(),
+        br(),
+        br(),
+        br(),
+        br(),
+        actionButton(inputId = "delete_filter_row", "Delete a filter criteria")
       ),
       column(
         3,
@@ -110,43 +111,28 @@ body <- dashboardBody(
         actionButton(inputId = "add_filter_row", "Add a filter criteria")
       )
     ),
-    fluidRow(
-      column(
-        3,
-        uiOutput("delete_variable_filter_name")
-      ),
-      column(
-        6,
-        br(),
-        actionButton(inputId = "delete_filter_row", "Delete a filter criteria")
-      )
-    ),
-    fluidRow(
-      column(
-        12,
-        actionButton(inputId = "filter_data", "Execute filter"),
-        br(),
-        DTOutput("table1")
-      )
+    box(
+      width = 12,
+      reactableOutput("table1")
     )
   ),
   fluidRow(
-    column(
-      12,
-      h2("Preview Data:"),
-      DTOutput("table2"),
+    box(
+      title = "Preview Data",
+      width = 12,
+      uiOutput("preview_var_selecter"),
+      reactableOutput("table2"),
       downloadButton("download_filtered_data")
     )
   ),
   fluidRow(
-    column(
-      12,
-      h1("Analysis"),
+    box(
+      width = 12,
       uiOutput("variable_selecter"),
       uiOutput("group_selecter"),
       plotOutput("national_hist")
     )
-  ),
+  )
 )
 
 ui <- dashboardPage(
