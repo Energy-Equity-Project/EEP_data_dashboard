@@ -255,12 +255,15 @@ server <- function(input, output, session) {
   
   react_vals <- reactiveValues(
     filter_criteria = data.frame(
-      variable = c(),
-      lower_limit = c(),
-      upper_limit = c()
+      variable = as.character(),
+      lower_limit = as.numeric(),
+      upper_limit = as.numeric()
       ),
     df_filtered = cejst
   )
+  
+  isolate(react_vals$filter_criteria)
+  isolate(react_vals$df_filtered)
   
   output$state_selecter <- renderUI({
     pickerInput(
@@ -428,7 +431,7 @@ server <- function(input, output, session) {
   
   
   observeEvent(input$add_filter_row, {
-    
+
     react_vals$filter_criteria <- react_vals$filter_criteria %>%
       filter(variable != input$filter_variable_name) %>%
       bind_rows(
