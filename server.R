@@ -41,7 +41,7 @@ create_histogram <- function(df, variable, group_in = NA) {
     filter(!is.na(.data[[variable]]))
   
   if (is.na(group_in) | str_length(group_in) == 0) {
-    df %>%
+    p <- df %>%
       ggplot() +
       geom_histogram(aes_string(variable), color = "#145DA0", fill = "#145DA0", alpha = 0.7) +
       theme_bw()
@@ -50,12 +50,34 @@ create_histogram <- function(df, variable, group_in = NA) {
     df <- df %>%
       filter(!is.na(.data[[group_in]]))
     
-    df %>%
+    p <- df %>%
       ggplot(aes_string(variable, color = group_in, fill = group_in)) +
       geom_histogram(alpha = 0.7, position = "dodge") +
       theme_bw() +
       theme(legend.position = "bottom")
   }
+  
+  p <- p +
+    labs(y = "Census Tract Count", x = str_to_sentence(gsub("_", " ", variable))) +
+    theme(
+      axis.title.x = element_text(size = 15),
+      axis.title.y = element_text(size = 15),
+      axis.text.x = element_text(size = 12),
+      axis.text.y = element_text(size = 12)
+    )
+  
+  if (str_length(group_in) > 0) {
+    p <- p +
+      labs(fill = str_to_sentence(gsub("_", " ", group_in)), color = str_to_sentence(gsub("_", " ", group_in))) +
+      theme(
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10),
+        legend.position = "top"
+      )
+  }
+  
+  
+  p
 }
 
 execute_filter <- function(df, filter_df, state, county) {
@@ -494,7 +516,7 @@ server <- function(input, output, session) {
   
   output$national_hist <- renderPlot({
     create_histogram(react_vals$filtered_df, input$variable_selecter, input$group_selecter)
-  })
+  }, height = 500)
   
   output$table1 <- renderReactable({
     if (is.null(react_vals$filter_criteria)) {

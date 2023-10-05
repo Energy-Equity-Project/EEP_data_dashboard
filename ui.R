@@ -131,7 +131,9 @@ body <- dashboardBody(
       width = 12,
       uiOutput("variable_selecter"),
       uiOutput("group_selecter"),
-      plotOutput("national_hist"),
+      plotOutput("national_hist", height = "100%"),
+      br(),
+      br(),
       column(
         3,
         uiOutput("scatter_var1_selected")
