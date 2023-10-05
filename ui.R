@@ -69,12 +69,12 @@ body <- dashboardBody(
         tags$div(
           materialSwitch(
             inputId = "ranked_center",
-            label = "Median",
+            label = "Mean",
             value = FALSE,
             status = "primary",
             inline = TRUE
           ),
-          tags$span("Mean")
+          tags$span("Median")
         )
       )
     )

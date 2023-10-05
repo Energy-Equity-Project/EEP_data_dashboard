@@ -129,7 +129,11 @@ area_boxplot <- function(df, state, county, variable, include.outliers = FALSE) 
     labs(x = "", y = str_to_sentence(gsub("_", " ", variable))) +
     theme_bw() +
     theme(
-      legend.position = "none"
+      legend.position = "none",
+      axis.text.x = element_text(size = 12),
+      axis.title.x = element_text(size = 15),
+      axis.text.y = element_text(size = 12),
+      axis.title.y = element_text(size = 15)
     )
 }
 
@@ -228,7 +232,10 @@ area_ranked <- function(df, state, county, variable, range_type = FALSE, center_
     theme_bw() +
     labs(x = str_to_sentence(gsub("_", " ", variable)), y = "", color = "Areas") +
     theme(
-      legend.position = "bottom"
+      legend.position = "bottom",
+      axis.text.y = element_text(size = 12),
+      axis.text.x = element_text(size = 12),
+      axis.title.x = element_text(size = 15)
     )
 }
 
@@ -314,7 +321,7 @@ server <- function(input, output, session) {
   output$location_boxplot <- renderPlot({
     
     area_boxplot(cejst, input$state_selected, input$county_selected, input$location_var_selected, input$boxplot_outliers_toggle)
-  }, height = reactive(500 + 5 * cejst %>%
+  }, height = reactive(500 + 7 * cejst %>%
                          filter(state_territory == input$state_selected) %>%
                          select(county_name) %>%
                          distinct() %>%
@@ -322,7 +329,7 @@ server <- function(input, output, session) {
   
   output$location_ranked <- renderPlot({
     area_ranked(cejst, input$state_selected, input$county_selected, input$location_var_selected, input$ranked_range, input$ranked_center)
-  }, height = reactive(500 + 5 * cejst %>%
+  }, height = reactive(500 + 7 * cejst %>%
                          filter(state_territory == input$state_selected) %>%
                          select(county_name) %>%
                          distinct() %>%
