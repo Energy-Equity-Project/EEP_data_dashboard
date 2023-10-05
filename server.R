@@ -298,6 +298,16 @@ server <- function(input, output, session) {
     )
   })
   
+  output$preview_var_selecter <- renderUI({
+    pickerInput(
+      inputId = "preview_var_selected",
+      label = "Select a variable you would like to preview",
+      choices = variable_list,
+      options = list(
+        `live-search` = TRUE)
+    )
+  })
+  
   output$location_boxplot <- renderPlot({
     
     area_boxplot(cejst, input$state_selected, input$county_selected, input$location_var_selected, input$boxplot_outliers_toggle)
@@ -388,7 +398,7 @@ server <- function(input, output, session) {
   output$delete_variable_filter_name <- renderUI({
     pickerInput(
       inputId = "filter_variable_name_delete",
-      label = "Select a variable to explore", 
+      label = "Select a variable to delete", 
       choices = variable_list,
       options = list(
         `live-search` = TRUE)
@@ -399,15 +409,21 @@ server <- function(input, output, session) {
     create_histogram(react_vals$filtered_df, input$variable_selecter, input$group_selecter)
   })
   
-  output$table1 <- renderDT({
-    datatable(react_vals$filter_criteria, editable = TRUE)
+  output$table1 <- renderReactable({
+    if (is.null(react_vals$filter_criteria)) {
+      reactable(cejst, minRows = 0)
+    } else {
+      reactable(react_vals$filter_criteria, minRows = 0)
+    }
   })
   
-  output$table2 <- renderDT({
-    datatable(react_vals$filtered_df,
-              options = list(
-                scrollX = TRUE
-              ))
+  output$table2 <- renderReactable({
+    
+    preview_cols <- c("state_territory", "county_name", "census_tract_2010_id", input$preview_var_selected)
+    reactable(react_vals$filtered_df %>%
+                select(preview_cols) %>%
+                filter(!is.na(.data[[input$preview_var_selected]])),
+              minRows = 0)
   })
   
   
@@ -430,7 +446,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$filter_data, {
-    if(is.null(input$filter_data)) { return(cejst) }
+    if(is.null(input$filter_data)) { return() }
     react_vals$filtered_df <- execute_filter(cejst, react_vals$filter_criteria, input$data_state_selected, input$data_county_selected)
   }, ignoreNULL = FALSE, ignoreInit = TRUE)
   
